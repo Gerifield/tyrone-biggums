@@ -3,30 +3,30 @@ package server
 import "github.com/gorilla/websocket"
 
 type Message struct {
-    Type uint
-    Id uint
+    Type    uint
+    ID      uint
     Message string
 }
 
 type ChatMessage struct {
-    Channel_name string `json:"channel_name"`
-    Channel_user_count int `json:"channel_user_count"`
-    From uint `json:"from"`
+    ChannelName      string `json:"channel_name"`
+    ChannelUserCount int    `json:"channel_user_count"`
+    From             uint   `json:"from"`
     Msg string `json:"msg"`
 }
 
 func (m *Message) FromMessage(message string) *Message {
     return &Message {
         websocket.TextMessage,
-        m.Id,
+        m.ID,
         message,
     }
 }
 
 func NewMessage(id uint, message string) *Message {
     return &Message {
-        Type: websocket.TextMessage,
-        Id: id,
+        Type:    websocket.TextMessage,
+        ID:      id,
         Message: message,
     }
 }

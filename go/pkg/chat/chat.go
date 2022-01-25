@@ -48,13 +48,13 @@ func (c *Chat) processMessage(message *server.Message) {
 	c.mu.Lock()
     defer c.mu.Unlock()
 
-    if val, ok := c.lookup_channels[message.Id]; ok {
+    if val, ok := c.lookup_channels[message.ID]; ok {
         channel := c.channels[val]
         channel_message, err := json.Marshal(server.ChatMessage {
-            Channel_name: val,
-            Channel_user_count: len(channel),
-            From: message.Id,
-            Msg: message.Message,
+            ChannelName:      val,
+            ChannelUserCount: len(channel),
+            From:             message.ID,
+            Msg:              message.Message,
         })
 
         if err != nil {
@@ -84,7 +84,7 @@ func StartChat(in <-chan *server.Message, out chan<- *server.Message) *Chat {
 	go func() {
         for msg := range in {
             if msg.Type == websocket.CloseMessage {
-				chat.leaveChannel(msg.Id)
+				chat.leaveChannel(msg.ID)
                 continue
             } else if msg.Type != websocket.TextMessage {
                 continue
@@ -92,11 +92,11 @@ func StartChat(in <-chan *server.Message, out chan<- *server.Message) *Chat {
 
 			if strings.HasPrefix(msg.Message, "!join ") {
 				parts := strings.Split(msg.Message, " ")
-				chat.leaveChannel(msg.Id)
-				chat.joinChannel(msg.Id, parts[1])
+				chat.leaveChannel(msg.ID)
+				chat.joinChannel(msg.ID, parts[1])
 
 			} else if msg.Message == ":q" {
-				chat.leaveChannel(msg.Id)
+				chat.leaveChannel(msg.ID)
 			} else {
 				chat.processMessage(msg)
 			}

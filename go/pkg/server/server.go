@@ -10,26 +10,28 @@ import (
 
 type Server struct {
 	sockets   map[uint]*Socket
-	currentId uint
+	currentID uint
 	lock      sync.Mutex
 
 	In          chan *Message
-	Out         chan *Message
-	from_socket chan *Message
+	Out        chan *Message
+	fromSocket chan *Message
 }
 
-var upgrader = websocket.Upgrader{} // use default options
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true }, // Allow any origin
+} // use default options
 
 func NewServer() (*Server, error) {
 	out := make(chan *Message, 10000)
-	from_socket := make(chan *Message, 10000)
+	fromSocket := make(chan *Message, 10000)
 	server := Server{
-		currentId:   0,
-		sockets:     make(map[uint]*Socket),
-		In:          make(chan *Message),
-		from_socket: from_socket,
-		Out:         out,
-		lock:        sync.Mutex{},
+		currentID:  0,
+		sockets:    make(map[uint]*Socket),
+		In:         make(chan *Message),
+		fromSocket: fromSocket,
+		Out:        out,
+		lock:       sync.Mutex{},
 	}
 
 	go func() {
@@ -37,13 +39,13 @@ func NewServer() (*Server, error) {
 			select {
 			case msg := <-out:
 				server.lock.Lock()
-				server.sockets[msg.Id].Out <- msg
+				server.sockets[msg.ID].Out <- msg
 				server.lock.Unlock()
 
-			case msg := <-from_socket:
+			case msg := <-fromSocket:
 				if msg.Type == websocket.CloseMessage {
 					server.lock.Lock()
-					delete(server.sockets, msg.Id)
+					delete(server.sockets, msg.ID)
 					server.lock.Unlock()
 				}
 				server.In <- msg
@@ -55,12 +57,11 @@ func NewServer() (*Server, error) {
 }
 
 func (s *Server) HandleNewConnection(w http.ResponseWriter, r *http.Request) {
-
 	s.lock.Lock()
-	id := s.currentId
-	s.currentId += 1
+	id := s.currentID
+	s.currentID += 1
 
-	socket, err := NewSocket(id, s.from_socket, w, r)
+	socket, err := NewSocket(id, s.fromSocket, w, r)
 
 	s.sockets[id] = socket
 	s.lock.Unlock()
